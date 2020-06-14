@@ -42,7 +42,7 @@ export default class ViewTimeLine extends Component {
                       <li key={key}>
                         <p>
                           <span>{subStringDay(event.eventDate)}</span>
-                          {event.eventName}
+                          <strong>{event.eventName}</strong>
                         </p>
                       </li>
                     );
@@ -58,7 +58,8 @@ export default class ViewTimeLine extends Component {
 }
 
 function subStringDay(date) {
+  const month = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   if (date === null) return null;
   let incomingDate = new Date(date);
-  return incomingDate.getDate() + " - " + incomingDate.getMonth() + "   ";
+  return month[incomingDate.getMonth()] + "  " + incomingDate.getDate() + " - ";
 }
