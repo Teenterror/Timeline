@@ -1,35 +1,23 @@
 import React, { Component } from "react";
-import { Container, Row, Col, Form, Button, Spinner } from "react-bootstrap";
+import { Container, Row, Col, Form, Button, Spinner, InputGroup } from "react-bootstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPlus } from "@fortawesome/free-solid-svg-icons";
 import Swal from "sweetalert2";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-import PhoneInput from "react-phone-input-2";
-import "react-phone-input-2/lib/style.css";
-
 toast.configure({
   autoClose: 3000,
   draggable: false,
 });
 
-export default class ModifyContact extends Component {
+export default class AddTimeLineEvent extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      contactName: this.props.contactObj.name,
-      city: this.props.contactObj.city,
-      email: this.props.contactObj.email,
-      phoneNumber: this.props.contactObj.phoneNumber[0],
-      additionalInfo: this.props.contactObj.additionalInfo,
-      validated: false,
-      loader: false,
+      year: 1900,
+      calendar: "AD",
     };
-    console.log(
-      "this.props.contactObj.phoneNumber",
-      this.props.contactObj.phoneNumber
-    );
   }
 
   handleSubmit = (event) => {
@@ -39,20 +27,12 @@ export default class ModifyContact extends Component {
       event.stopPropagation();
     }
     this.setValidated(true);
-    let isValid = this.checkOtherFieldsValidation();
+    let isValid = this.validateEmail();
     if (isValid) {
-      this.updateContact();
+      this.addContact();
     } else {
-      toast.error("Email is invalid!!!. Correct and try again");
+      toast.error("Somefields are invalid!!!. Correct and try again");
     }
-  };
-
-  checkOtherFieldsValidation = () => {
-    let { contactName, email, phoneNumber, city } = this.state;
-    if (email !== "") {
-      return this.validateEmail();
-    }
-    return true;
   };
 
   validateEmail = () => {
@@ -71,18 +51,17 @@ export default class ModifyContact extends Component {
     });
   };
 
-  updateContact = () => {
+  addContact = (isSaveAndNew) => {
     let { contactName, email, phoneNumber, city, additionalInfo } = this.state;
     this.setState({
       loader: true,
     });
-    fetch("/api/updateContact", {
+    fetch("/api/addContact", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        id: this.props.contactObj._id,
         contactName,
         city,
         email,
@@ -96,7 +75,7 @@ export default class ModifyContact extends Component {
           console.error("An error occured while adding contact");
           Swal.fire({
             icon: "error",
-            title: "An error occured while updating Contact",
+            title: "An error occured while adding Contact",
             showConfirmButton: true,
             timer: 1500,
           });
@@ -104,7 +83,7 @@ export default class ModifyContact extends Component {
           console.log("contact added successfully");
           Swal.fire({
             icon: "success",
-            title: "Contact updated successfully",
+            title: "Contact added successfully",
             showConfirmButton: true,
             timer: 1500,
           });
@@ -120,30 +99,28 @@ export default class ModifyContact extends Component {
         });
       })
       .finally(() => {
+        if (isSaveAndNew) {
+          this.handleReset();
+        }
         this.setState({
           loader: false,
         });
         this.setValidated(false);
-        this.props.updatedContacts();
       });
   };
 
   setContactName = (e) => {
     this.setState({ contactName: e.target.value });
   };
-
   setEmail = (e) => {
     this.setState({ email: e.target.value });
   };
-
   setPhoneNumber = (phoneNumber) => {
     this.setState({ phoneNumber });
   };
-
   setAdditionalInfo = (e) => {
     this.setState({ additionalInfo: e.target.value });
   };
-
   setCity = (e) => {
     this.setState({ city: e.target.value });
   };
@@ -156,19 +133,25 @@ export default class ModifyContact extends Component {
       phoneNumber: "",
       additionalInfo: "",
       validated: false,
+      loader: false,
     });
   };
 
+  handleSaveAndNew = () => {
+    this.setValidated(true);
+    this.addContact(true);
+  };
+
   render() {
-    let { validated, loader } = this.state;
+    let { validated, loader, phoneNumVal } = this.state;
     return (
       <Container>
         <Row className="mb-5 mt-5">
           <Col sm={8}>
-            <h2>Modify Contact</h2>
+            <h2>Create Contact</h2>
           </Col>
           <Col sm={4} className="text-right">
-            <Button variant="secondary" onClick={this.props.goBack}>
+            <Button variant="secondary" onClick={() => this.props.history.push("/contact")}>
               Go Back
             </Button>{" "}
             <Button variant="secondary" onClick={this.handleReset}>
@@ -189,53 +172,60 @@ export default class ModifyContact extends Component {
         </Row>
         <Row className="mb-5">
           <Col>
-            <Form
-              id="contactForm"
-              noValidate
-              validated={validated}
-              onSubmit={this.handleSubmit}
-            >
+            <Form id="contactForm" noValidate validated={validated} onSubmit={this.handleSubmit}>
               <Form.Row>
                 <Form.Group as={Col}>
-                  <Form.Label>Name</Form.Label>
+                  <Form.Label>Name </Form.Label>
                   <Form.Control
-                    placeholder=""
+                    placeholder="Name"
                     name="contactName"
                     value={this.state.contactName}
                     onChange={this.setContactName}
+                    // required
+                    maxLength={40}
                   />
-                  <Form.Control.Feedback type="invalid">
-                    Please type a Name
-                  </Form.Control.Feedback>
+                  <Form.Control.Feedback>Looks good!</Form.Control.Feedback>
+                  <Form.Control.Feedback type="invalid">Please enter valid name</Form.Control.Feedback>
                 </Form.Group>
                 <Form.Group as={Col}>
-                  <Form.Label>City</Form.Label>
+                  <Form.Label>Location </Form.Label>
                   <Form.Control
-                    placeholder=""
+                    placeholder="City, Place"
                     name="city"
                     value={this.state.city}
                     onChange={this.setCity}
+                    // required
                   />
+                  <Form.Control.Feedback>Looks good!</Form.Control.Feedback>
+                  <Form.Control.Feedback type="invalid">Please enter valid city name</Form.Control.Feedback>
                 </Form.Group>
               </Form.Row>
               <Form.Row>
                 <Form.Group as={Col}>
-                  <Form.Label>Email</Form.Label>
+                  <Form.Label>Email </Form.Label>
                   <Form.Control
                     type="email"
-                    placeholder=""
+                    placeholder="Enter the email id"
                     name="email"
                     value={this.state.email}
                     onChange={this.setEmail}
+                    // required
                   />
+                  <Form.Control.Feedback>Looks good!</Form.Control.Feedback>
+                  <Form.Control.Feedback type="invalid">Please enter valid email</Form.Control.Feedback>
                 </Form.Group>
                 <Form.Group as={Col}>
-                  <Form.Label>Phone Number</Form.Label>
-                  <PhoneInput
-                    country={"in"}
-                    value={this.state.phoneNumber}
-                    onChange={(phoneNumber) => this.setPhoneNumber(phoneNumber)}
-                  />
+                  <Form.Group>
+                    <Form.Label>Phone Number</Form.Label>
+                    <PhoneInput
+                      country={"in"}
+                      value={this.state.phoneNumber}
+                      onChange={(phoneNumber) => this.setPhoneNumber(phoneNumber)}
+                    />
+                  </Form.Group>
+
+                  <Form.Control.Feedback>Looks good!</Form.Control.Feedback>
+                  <Form.Control.Feedback type="invalid">Please enter valid phoneNumber</Form.Control.Feedback>
                 </Form.Group>
               </Form.Row>
               <Form.Group>
@@ -246,30 +236,24 @@ export default class ModifyContact extends Component {
                   name="additionalInfo"
                   value={this.state.additionalInfo}
                   onChange={this.setAdditionalInfo}
+                  maxLength={140}
                   placeholder="Max 140 Charecters"
                 />
+                <Form.Control.Feedback>Looks good!</Form.Control.Feedback>
               </Form.Group>
-
               <div className="d-flex mg-b-10">
                 <Button
                   variant="primary"
-                  type="submit"
                   className="btn btn-sm btn-uppercase btn-primary tx-spacing-1 mr-2"
                   disabled={loader}
+                  onClick={this.handleSaveAndNew}
                 >
                   {loader ? (
                     <>
-                      <Spinner
-                        as="span"
-                        animation="border"
-                        size="sm"
-                        role="status"
-                        aria-hidden="true"
-                      />{" "}
-                      &nbsp;{" "}
+                      <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" /> &nbsp;{" "}
                     </>
                   ) : null}
-                  Update
+                  Save
                 </Button>
               </div>
             </Form>
